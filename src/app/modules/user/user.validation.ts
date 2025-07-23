@@ -24,7 +24,7 @@ export const createUserZodSchema = z.object({
       message: 'Password must contain at least 1 number.',
     })
     .regex(/^(?=.*[!@#$%^&*])/, {
-      message: 'Password must contain at least 1 character.',
+      message: 'Password must contain at least 1 special character.',
     }),
   phone: z
     .string({ invalid_type_error: 'Phone number must be string.' })
@@ -58,7 +58,7 @@ export const updateUserZodSchema = z.object({
       message: 'Password must contain at least 1 number.',
     })
     .regex(/^(?=.*[!@#$%^&*])/, {
-      message: 'Password must contain at least 1 character.',
+      message: 'Password must contain at least 1 special character.',
     })
     .optional(),
   phone: z
