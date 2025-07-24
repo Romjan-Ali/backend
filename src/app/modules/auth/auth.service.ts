@@ -6,10 +6,11 @@ import type { IUser } from '../user/user.interface'
 import { envVars } from '../../config/env'
 import {
   createNewAccessTokenWithRefreshToken,
-  createUserTokens,
+  // createUserTokens,
 } from '../../utils/userTokens'
 import type { JwtPayload } from 'jsonwebtoken'
 
+/*
 const credentialsLogin = async (payload: Partial<IUser>) => {
   const { email, password } = payload
 
@@ -38,6 +39,7 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     user: rest,
   }
 }
+  */
 
 const getNewAccessToken = async (refreshToken: string) => {
   const newAccessToken = await createNewAccessTokenWithRefreshToken(
@@ -55,11 +57,17 @@ const resetPassword = async (
 ) => {
   const user = await User.findById(decodedToken.userId)
 
-  if(!user || !user.password){
-    throw new AppError(httpStatus.UNAUTHORIZED, 'User not found or password missing')
+  if (!user || !user.password) {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'User not found or password missing'
+    )
   }
 
-  const isOldPasswordMatched = await bcrypt.compare(oldPassword, user?.password || '')
+  const isOldPasswordMatched = await bcrypt.compare(
+    oldPassword,
+    user?.password || ''
+  )
 
   if (!isOldPasswordMatched) {
     throw new AppError(httpStatus.UNAUTHORIZED, "Old password doesn't match")
@@ -76,7 +84,7 @@ const resetPassword = async (
 }
 
 export const AuthServices = {
-  credentialsLogin,
+  // credentialsLogin,
   getNewAccessToken,
   resetPassword,
 }
