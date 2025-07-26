@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express'
+
 import { catchAsync } from '../../utils/catchAsync'
-import { DivisionService } from './division.service'
 import { sendResponse } from '../../utils/sendResponse'
+import { DivisionService } from './division.service'
 
 const createDivision = catchAsync(async (req: Request, res: Response) => {
   const result = await DivisionService.createDivision(req.body)
@@ -14,23 +15,25 @@ const createDivision = catchAsync(async (req: Request, res: Response) => {
 })
 
 const getAllDivisions = catchAsync(async (req: Request, res: Response) => {
-  const result = await DivisionService.getAllDivisions()
+  const query = req.query
+  const result = await DivisionService.getAllDivisions(
+    query as Record<string, string>
+  )
   sendResponse(res, {
-    statusCode: 201,
+    statusCode: 200,
     success: true,
-    message: 'Division retrieved',
+    message: 'Divisions retrieved',
     data: result.data,
     meta: result.meta,
   })
 })
-
 const getSingleDivision = catchAsync(async (req: Request, res: Response) => {
   const slug = req.params.slug
   const result = await DivisionService.getSingleDivision(slug)
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Division retrieved',
+    message: 'Divisions retrieved',
     data: result.data,
   })
 })

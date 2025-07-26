@@ -1,11 +1,12 @@
-import type { Request, Response } from 'express'
-import { User } from './user.model'
-import { Role, type IAuthProvider, type IUser } from './user.interface'
+import bcryptjs from 'bcryptjs'
 import httpStatus from 'http-status-codes'
-import AppError from '../../errorHelpers/AppError'
-import bcrypt from 'bcryptjs'
+import { type JwtPayload } from 'jsonwebtoken'
 import { envVars } from '../../config/env'
-import type { JwtPayload } from 'jsonwebtoken'
+import AppError from '../../errorHelpers/AppError'
+import { QueryBuilder } from '../../utils/QueryBuilder'
+import { userSearchableFields } from './user.constant'
+import { type IAuthProvider, type IUser, Role } from './user.interface'
+import { User } from './user.model'
 
 const createUser = async (payload: Partial<IUser>) => {
   const { email, password, ...rest } = payload
@@ -13,10 +14,10 @@ const createUser = async (payload: Partial<IUser>) => {
   const isUserExist = await User.findOne({ email })
 
   if (isUserExist) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'User already exists')
+    throw new AppError(httpStatus.BAD_REQUEST, 'User Already Exist')
   }
 
-  const hashedPassword = await bcrypt.hash(
+  const hashedPassword = await bcryptjs.hash(
     password as string,
     Number(envVars.BCRYPT_SALT_ROUND)
   )
@@ -41,22 +42,18 @@ const updateUser = async (
   payload: Partial<IUser>,
   decodedToken: JwtPayload
 ) => {
-  const { email, password, ...rest } = payload
+  const ifUserExist = await User.findById(userId)
 
-  const isUserExist = await User.findById(userId)
-
-  if (!isUserExist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found')
+  if (!ifUserExist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User Not Found')
   }
 
   if (payload.role) {
     if (decodedToken.role === Role.USER || decodedToken.role === Role.GUIDE) {
       throw new AppError(httpStatus.FORBIDDEN, 'You are not authorized')
     }
-    if (
-      decodedToken.role === Role.SUPER_ADMIN ||
-      decodedToken.role === Role.ADMIN
-    ) {
+
+    if (payload.role === Role.SUPER_ADMIN && decodedToken.role === Role.ADMIN) {
       throw new AppError(httpStatus.FORBIDDEN, 'You are not authorized')
     }
   }
@@ -68,9 +65,9 @@ const updateUser = async (
   }
 
   if (payload.password) {
-    payload.password = await bcrypt.hash(
-      password as string,
-      Number(envVars.BCRYPT_SALT_ROUND)
+    payload.password = await bcryptjs.hash(
+      payload.password,
+      envVars.BCRYPT_SALT_ROUND
     )
   }
 
@@ -82,20 +79,35 @@ const updateUser = async (
   return newUpdatedUser
 }
 
-const getAllUsers = async () => {
-  const users = await User.find({})
-  const totalUsers = await User.countDocuments()
+const getAllUsers = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(User.find(), query)
+  const usersData = queryBuilder
+    .filter()
+    .search(userSearchableFields)
+    .sort()
+    .fields()
+    .paginate()
+
+  const [data, meta] = await Promise.all([
+    usersData.build(),
+    queryBuilder.getMeta(),
+  ])
 
   return {
-    data: users,
-    meta: {
-      total: totalUsers,
-    },
+    data,
+    meta,
+  }
+}
+const getSingleUser = async (id: string) => {
+  const user = await User.findById(id)
+  return {
+    data: user,
   }
 }
 
 export const UserServices = {
   createUser,
-  updateUser,
   getAllUsers,
+  getSingleUser,
+  updateUser,
 }
