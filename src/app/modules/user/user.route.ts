@@ -9,6 +9,7 @@ const router = Router()
 
 router.post(
   '/register',
+  // validateRequest(createUserZodSchema),
   UserControllers.createUser
 )
 router.get(
@@ -16,9 +17,10 @@ router.get(
   checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.getAllUsers
 )
+router.get('/me', checkAuth(...Object.values(Role)), UserControllers.getMe)
 router.get(
   '/:id',
-  checkAuth(...Object.values(Role)),
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
   UserControllers.getSingleUser
 )
 router.patch(
@@ -27,5 +29,5 @@ router.patch(
   checkAuth(...Object.values(Role)),
   UserControllers.updateUser
 )
-
+// /api/v1/user/:id
 export const UserRoutes = router
