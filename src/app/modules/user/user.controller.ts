@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import type { NextFunction, Request, Response } from 'express'
 import httpStatus from 'http-status-codes'
 import { type JwtPayload } from 'jsonwebtoken'
@@ -34,6 +32,11 @@ const updateUser = catchAsync(
       verifiedToken as JwtPayload
     )
 
+    // res.status(httpStatus.CREATED).json({
+    //     message: "User Created Successfully",
+    //     user
+    // })
+
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.CREATED,
@@ -50,12 +53,35 @@ const getAllUsers = catchAsync(
       query as Record<string, string>
     )
 
+    // res.status(httpStatus.OK).json({
+    //     success: true,
+    //     message: "All Users Retrieved Successfully",
+    //     data: users
+    // })
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.CREATED,
       message: 'All Users Retrieved Successfully',
       data: result.data,
       meta: result.meta,
+    })
+  }
+)
+const getMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload
+    const result = await UserServices.getMe(decodedToken.userId)
+
+    // res.status(httpStatus.OK).json({
+    //     success: true,
+    //     message: "All Users Retrieved Successfully",
+    //     data: users
+    // })
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: 'Your profile Retrieved Successfully',
+      data: result.data,
     })
   }
 )
@@ -72,9 +98,12 @@ const getSingleUser = catchAsync(
   }
 )
 
+// function => try-catch catch => req-res function
+
 export const UserControllers = {
   createUser,
   getAllUsers,
   getSingleUser,
   updateUser,
+  getMe,
 }
