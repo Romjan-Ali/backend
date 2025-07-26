@@ -1,6 +1,9 @@
 import type { Response } from 'express'
 
 interface TMeta {
+  page: number
+  limit: number
+  totalPage: number
   total: number
 }
 
@@ -13,13 +16,11 @@ interface TResponse<T> {
 }
 
 export const sendResponse = <T>(res: Response, data: TResponse<T>) => {
-  const { statusCode, success, message, meta } = data
-  const resData = data
   res.status(data.statusCode).json({
-    statusCode,
-    success,
-    message,
-    data: resData.data,
-    meta,
+    statusCode: data.statusCode,
+    success: data.success,
+    message: data.message,
+    meta: data.meta,
+    data: data.data,
   })
 }

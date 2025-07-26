@@ -1,35 +1,35 @@
 import type { NextFunction, Request, Response } from 'express'
-import { verifyToken } from '../utils/jwt'
+import httpStatus from 'http-status-codes'
+import { type JwtPayload } from 'jsonwebtoken'
 import { envVars } from '../config/env'
-import type { JwtPayload } from 'jsonwebtoken'
 import AppError from '../errorHelpers/AppError'
-import { User } from '../modules/user/user.model'
-import httpStatus from '../utils/httpStatus'
 import { IsActive } from '../modules/user/user.interface'
+import { User } from '../modules/user/user.model'
+import { verifyToken } from '../utils/jwt'
 
 export const checkAuth =
   (...authRoles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accessToken = req.cookies.accessToken
-      // console.log('accessToken', accessToken)
+      const accessToken = req.headers.authorization
 
       if (!accessToken) {
-        throw new AppError(403, 'No token received')
+        throw new AppError(403, 'No Token Recieved')
       }
 
-      const decodedToken = verifyToken(
+      const verifiedToken = verifyToken(
         accessToken,
         envVars.JWT_ACCESS_SECRET
       ) as JwtPayload
 
-      
-      const isUserExist = await User.findOne({ email: decodedToken.email })      
-      
-      if (!isUserExist) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User doesn't exist")
-      }
+      const isUserExist = await User.findOne({ email: verifiedToken.email })
 
+      if (!isUserExist) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'User does not exist')
+      }
+      if (!isUserExist.isVerified) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'User is not verified')
+      }
       if (
         isUserExist.isActive === IsActive.BLOCKED ||
         isUserExist.isActive === IsActive.INACTIVE
@@ -39,17 +39,14 @@ export const checkAuth =
           `User is ${isUserExist.isActive}`
         )
       }
-
       if (isUserExist.isDeleted) {
         throw new AppError(httpStatus.BAD_REQUEST, 'User is deleted')
       }
 
-      if (!authRoles.includes(decodedToken.role)) {
-        throw new AppError(403, 'You are not permitted to view in this route!!')
+      if (!authRoles.includes(verifiedToken.role)) {
+        throw new AppError(403, 'You are not permitted to view this route!!!')
       }
-
-      req.user = decodedToken
-
+      req.user = verifiedToken
       next()
     } catch (error) {
       console.log('jwt error', error)
